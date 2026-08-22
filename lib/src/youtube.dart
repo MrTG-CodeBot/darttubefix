@@ -197,7 +197,6 @@ class YouTube {
     for (final candidate in clientCandidates) {
       try {
         final res = await callInnertube(candidate);
-        final statusDict = res['playabilityStatus'] as Map<String, dynamic>? ?? {};
         if (res.containsKey('streamingData')) {
           client = candidate;
           return res;
@@ -207,6 +206,16 @@ class YouTube {
         continue;
       }
     }
+
+    // Fallback: extract from watch HTML ytInitialPlayerResponse
+    try {
+      final html = await watchHtml;
+      final htmlPlayerResponse = extract.initialPlayerResponse(html);
+      if (htmlPlayerResponse.containsKey('streamingData')) {
+        client = 'WEB';
+        return htmlPlayerResponse;
+      }
+    } catch (_) {}
 
     return lastResponse;
   }
