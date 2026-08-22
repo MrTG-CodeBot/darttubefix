@@ -462,7 +462,8 @@ class InnerTube {
     this.allowCache = true,
     this.usePoToken = false,
   }) {
-    final config = defaultClients[clientName];
+    final clientKey = clientName == 'TVHTML5' ? 'TV' : (clientName == 'WEB_REMIX' ? 'WEB_MUSIC' : clientName);
+    final config = defaultClients[clientKey];
     if (config == null) {
       throw ArgumentError('Unknown InnerTube client name: $clientName');
     }

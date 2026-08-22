@@ -274,11 +274,12 @@ Future<void> applySignature(
       } else {
         final s = stream["s"] as String;
         final signature = await cipher.getSig(s);
-        queryParams['sig'] = signature;
+        final spKey = stream["sp"] as String? ?? "sig";
+        queryParams[spKey] = signature;
       }
 
-      if (queryParams.containsKey('n')) {
-        final initialN = queryParams['n']!;
+      final initialN = queryParams['n'] ?? stream['n'] as String?;
+      if (initialN != null && initialN.isNotEmpty) {
         if (!discoveredN.containsKey(initialN)) {
           discoveredN[initialN] = await cipher.getNsig(initialN);
         }
@@ -317,6 +318,10 @@ List<Map<String, dynamic>>? applyDescrambler(Map<String, dynamic> streamData) {
       
       data['url'] = cipherUrl['url'];
       data['s'] = cipherUrl['s'];
+      data['sp'] = cipherUrl['sp'] ?? 'sig';
+      if (cipherUrl.containsKey('n')) {
+        data['n'] = cipherUrl['n'];
+      }
       data['is_sabr'] = false;
     } else if (!data.containsKey('url') && !data.containsKey('signatureCipher')) {
       data['url'] = streamData['serverAbrStreamingUrl'];
