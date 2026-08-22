@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'extract.dart' as extract;
 import 'request.dart';
 import 'exceptions.dart';
@@ -39,7 +38,7 @@ class YouTube {
     this.poToken,
   }) {
     videoId = extract.videoId(url);
-    watchUrl = "https://youtube.com/watch?v=$videoId";
+    watchUrl = "https://www.youtube.com/watch?v=$videoId";
     embedUrl = "https://www.youtube.com/embed/$videoId";
 
     streamMonostate = Monostate(
@@ -191,22 +190,25 @@ class YouTube {
       return await innertube.player(videoId);
     }
 
-    var response = await callInnertube(clientToUse);
+    final clientCandidates = [clientToUse, ...fallbackClients.where((c) => c != clientToUse)];
+    Map<String, dynamic> lastResponse = {};
 
-    for (final fallback in fallbackClients) {
-      final statusDict = response['playabilityStatus'] as Map<String, dynamic>? ?? {};
-      final status = statusDict['status'];
-      final reason = statusDict['reason'];
-
-      if (status == 'UNPLAYABLE' && reason == 'This video is not available') {
-        client = fallback;
-        response = await callInnertube(fallback);
-      } else {
-        break;
+    for (final candidate in clientCandidates) {
+      try {
+        final res = await callInnertube(candidate);
+        final statusDict = res['playabilityStatus'] as Map<String, dynamic>? ?? {};
+        final status = statusDict['status'];
+        if (res.containsKey('streamingData')) {
+          client = candidate;
+          return res;
+        }
+        lastResponse = res;
+      } catch (_) {
+        continue;
       }
     }
 
-    return response;
+    return lastResponse;
   }
 
   Future<Map<String, dynamic>> get streamingData async {

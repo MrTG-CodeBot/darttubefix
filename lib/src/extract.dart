@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'exceptions.dart';
 import 'helpers.dart';
 import 'parser.dart';
@@ -73,7 +72,19 @@ List<dynamic> playabilityStatus(Map<String, dynamic> playerResponse) {
 }
 
 String signatureTimestamp(String js) {
-  return regexSearch(r"signatureTimestamp:(\d*)", js, 1);
+  final patterns = [
+    r"signatureTimestamp:(\d+)",
+    r"sts:(\d+)",
+    r"signatureTimestamp\s*:\s*(\d+)",
+    r"sts\s*:\s*(\d+)"
+  ];
+  for (final pattern in patterns) {
+    try {
+      final res = regexSearch(pattern, js, 1);
+      if (res.isNotEmpty) return res;
+    } catch (_) {}
+  }
+  throw RegexMatchError("signatureTimestamp", "patterns");
 }
 
 String visitorData(String responseContext) {
@@ -128,7 +139,7 @@ String jsUrl(String html) {
   } catch (_) {
     baseJs = getYtplayerJs(html);
   }
-  return "https://youtube.com$baseJs";
+  return "https://www.youtube.com$baseJs";
 }
 
 List<dynamic> mimeTypeCodec(String mimeTypeCodecStr) {

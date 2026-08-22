@@ -1,5 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
+
+final http.Client _client = IOClient(
+  HttpClient()..badCertificateCallback = (X509Certificate cert, String host, int port) => true,
+);
 
 Future<String> executeRequest(
   String url, {
@@ -20,11 +26,11 @@ Future<String> executeRequest(
   final bodyStr = data is Map ? json.encode(data) : data?.toString();
 
   if (method == 'POST') {
-    response = await http.post(uri, headers: reqHeaders, body: bodyStr);
+    response = await _client.post(uri, headers: reqHeaders, body: bodyStr);
   } else if (method == 'HEAD') {
-    response = await http.head(uri, headers: reqHeaders);
+    response = await _client.head(uri, headers: reqHeaders);
   } else {
-    response = await http.get(uri, headers: reqHeaders);
+    response = await _client.get(uri, headers: reqHeaders);
   }
 
   return response.body;

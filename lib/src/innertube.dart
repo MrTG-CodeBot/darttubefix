@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'request.dart';
-import 'exceptions.dart';
 
 const String clientId = '861556708454-d6dlm3lh05idd8npek18k6be8ba3oc68.apps.googleusercontent.com';
 const String clientSecret = 'SboVhoG9s0rNafixCSGGKXAT';
@@ -512,5 +511,15 @@ class InnerTube {
     final data = Map<String, dynamic>.from(innertubeContext);
     data['videoId'] = videoId;
     return _callApi('playability/verify_age', data);
+  }
+
+  Future<Map<String, dynamic>> search(String query, {String? continuation}) async {
+    final data = Map<String, dynamic>.from(innertubeContext);
+    if (continuation != null) {
+      data['continuation'] = continuation;
+    } else {
+      data['query'] = query;
+    }
+    return _callApi('search', data);
   }
 }
