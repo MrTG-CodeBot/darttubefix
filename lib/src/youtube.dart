@@ -198,7 +198,6 @@ class YouTube {
       try {
         final res = await callInnertube(candidate);
         final statusDict = res['playabilityStatus'] as Map<String, dynamic>? ?? {};
-        final status = statusDict['status'];
         if (res.containsKey('streamingData')) {
           client = candidate;
           return res;

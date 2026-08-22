@@ -1,10 +1,21 @@
 name: darttubefix
-description: A starting point for Dart libraries or applications.
+description: A lightweight and powerful YouTube and YouTube Music content extraction library for Dart, translated and adapted from pytubefix.
 version: 1.0.0
-# repository: https://github.com/my_org/my_repo
+repository: https://github.com/MrTG-CodeBot/darttubefix
+homepage: https://github.com/MrTG-CodeBot/darttubefix
+issue_tracker: https://github.com/MrTG-CodeBot/darttubefix/issues
+topics:
+  - youtube
+  - youtube-music
+  - pytubefix
+  - stream-extractor
+  - video-downloader
+
+false_secrets:
+  - /lib/src/innertube.dart
 
 environment:
-  sdk: ^3.9.0
+  sdk: ^3.0.0
 
 dependencies:
   http: ^1.2.0
@@ -13,3 +24,4 @@ dependencies:
 dev_dependencies:
   lints: ^6.0.0
   test: ^1.25.6
+
