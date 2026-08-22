@@ -12,3 +12,4 @@ pubspec.lock
 /print_dart_url.dart
 /scratch_debug.dart
 /test_nsig_debug.dart
+.vscode/

@@ -5,6 +5,7 @@ import 'innertube.dart';
 import 'stream.dart';
 import 'query.dart';
 import 'monostate.dart';
+import 'related.dart';
 
 class YouTube {
   final String url;
@@ -401,6 +402,12 @@ class YouTube {
       return thumbnails.last['url'] as String;
     }
     return "https://img.youtube.com/vi/$videoId/maxresdefault.jpg";
+  }
+
+  Future<MusicRelated> get musicRelated async {
+    final related = MusicRelated(watchUrl);
+    await related.fetch();
+    return related;
   }
 
   static YouTube fromId(String videoId) {

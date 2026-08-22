@@ -507,6 +507,15 @@ class InnerTube {
     return _callApi('next', data);
   }
 
+  Future<Map<String, dynamic>> browse(String browseId, {String? params}) async {
+    final data = Map<String, dynamic>.from(innertubeContext);
+    data['browseId'] = browseId;
+    if (params != null) {
+      data['params'] = params;
+    }
+    return _callApi('browse', data);
+  }
+
   Future<Map<String, dynamic>> verifyAge(String videoId) async {
     final data = Map<String, dynamic>.from(innertubeContext);
     data['videoId'] = videoId;

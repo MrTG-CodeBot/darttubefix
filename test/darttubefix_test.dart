@@ -39,11 +39,37 @@ void main() {
 
   group('YouTube Stream Extraction Tests', () {
     test('Can fetch video streams using fallback client mechanism', () async {
-      final yt = YouTube('https://www.youtube.com/watch?v=r8iPHiciQd0');
+      final yt = YouTube('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
       final streams = await yt.streams;
       expect(streams.fmtStreams, isNotEmpty);
       expect(streams.highestResolution, isNotNull);
       expect(streams.highestResolution!.url, isNotEmpty);
     });
   });
+
+  group('YouTube Music Related Content Tests', () {
+    test('Can fetch related playlists, similar artists, and artist info from YT Music URL', () async {
+      final musicUrl = 'https://music.youtube.com/watch?v=y9VW61sgfWQ&list=RDAMVMy9VW61sgfWQ';
+      final related = MusicRelated(musicUrl);
+      await related.fetch();
+
+      expect(related.recommendedPlaylists, isNotEmpty);
+      expect(related.similarArtists, isNotEmpty);
+      expect(related.recommendedPlaylists.first.title, isNotEmpty);
+      expect(related.similarArtists.first.title, isNotEmpty);
+    });
+
+    test('Can fetch More From Artist and About Artist when available', () async {
+      final musicUrl = 'https://music.youtube.com/watch?v=dQw4w9WgXcQ';
+      final yt = YouTube(musicUrl);
+      final related = await yt.musicRelated;
+
+      expect(related.recommendedPlaylists, isNotEmpty);
+      expect(related.similarArtists, isNotEmpty);
+      expect(related.moreFromArtist, isNotEmpty);
+      expect(related.aboutArtist, isNotNull);
+      expect(related.aboutArtist!.description, isNotEmpty);
+    });
+  });
 }
+
