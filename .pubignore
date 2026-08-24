@@ -1,0 +1,10 @@
+.dart_tool/
+.flutter-plugins-dependencies
+build/
+*.mp4
+/play.html
+/result.txt
+/print_dart_url.dart
+/scratch_debug.dart
+/test_nsig_debug.dart
+.vscode/
