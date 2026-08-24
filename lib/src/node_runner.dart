@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter_js/flutter_js.dart';
 import 'package:path/path.dart' as p;
 
 class NodeRunnerError implements Exception {
@@ -29,24 +30,39 @@ class NodeRunner {
   StreamSubscription? _stdoutSub;
   final List<Completer<String>> _completerQueue = [];
 
+  JavascriptRuntime? _flutterJsRuntime;
+  bool _usingFlutterJs = false;
+
   NodeRunner(this.code);
 
   Future<void> init() async {
     await _startProcess();
   }
 
-  bool get isRunning => _process != null;
+  bool get isRunning => _process != null || _flutterJsRuntime != null;
 
   Future<void> _startProcess() async {
     final runnerPath = _findRunnerJsPath();
     try {
       _process = await Process.start('node', [runnerPath]);
+      _usingFlutterJs = false;
+      _setupStdout();
     } catch (e) {
-      throw NodeRunnerError(
-        "Failed to start Node.js process. Make sure Node.js is installed and 'node' is in your PATH. Error: $e"
-      );
+      // Node.js process failed to start (e.g. mobile environment or Node.js not installed)
+      // Fallback to embedded native JS engine via flutter_js
+      try {
+        _flutterJsRuntime = getJavascriptRuntime();
+        _usingFlutterJs = true;
+      } catch (flutterJsError) {
+        throw NodeRunnerError(
+          "Failed to start Node.js process and flutter_js runtime is unavailable. Error: $e"
+        );
+      }
     }
-    
+  }
+
+  void _setupStdout() {
+    if (_process == null) return;
     final lines = _process!.stdout
         .transform(utf8.decoder)
         .transform(const LineSplitter());
@@ -108,7 +124,7 @@ class NodeRunner {
   }
 
   static String _exposed(String code, String funName) {
-    final exposed = "_exposed['$funName']=$funName;" + "})(_yt_player);";
+    final exposed = "_exposed['$funName']=$funName;})(_yt_player);";
     return code.replaceFirst("})(_yt_player);", exposed);
   }
 
@@ -122,7 +138,7 @@ class NodeRunner {
   }
 
   Future<dynamic> _send(Map<String, dynamic> data) async {
-    if (_process == null) {
+    if (_process == null && !_usingFlutterJs) {
       await _startProcess();
     }
     
@@ -150,6 +166,15 @@ class NodeRunner {
 
   Future<dynamic> loadFunction(String funcName) async {
     functionName = funcName;
+    if (_usingFlutterJs) {
+      _flutterJsRuntime!.evaluate("var _exposed = _exposed || {}; var window = globalThis; var document = document || {};");
+      final exposedCode = _exposed(code, funcName);
+      final evalResult = _flutterJsRuntime!.evaluate(exposedCode);
+      if (evalResult.isError) {
+        _flutterJsRuntime!.evaluate(code);
+      }
+      return {"status": "ok"};
+    }
     return _send({
       "type": "load",
       "code": _exposed(code, funcName)
@@ -157,6 +182,23 @@ class NodeRunner {
   }
 
   Future<dynamic> call(List<dynamic> args) async {
+    if (_usingFlutterJs) {
+      final formattedArgs = args.map((a) => json.encode(a)).join(',');
+      final expr = "JSON.stringify((typeof _exposed !== 'undefined' && _exposed['$functionName']) ? _exposed['$functionName']($formattedArgs) : (typeof $functionName !== 'undefined' ? $functionName($formattedArgs) : undefined))";
+      final result = _flutterJsRuntime!.evaluate(expr);
+      if (result.isError) {
+        throw NodeRunnerError("flutter_js evaluation error: ${result.stringResult}");
+      }
+      final raw = result.stringResult.trim();
+      if (raw.isEmpty || raw == "undefined" || raw == "null") {
+        throw NodeRunnerUndefinedResponseError("flutter_js returned undefined");
+      }
+      try {
+        return json.decode(raw);
+      } catch (e) {
+        return raw;
+      }
+    }
     return _send({
       "type": "call",
       "fun": functionName,
@@ -169,6 +211,9 @@ class NodeRunner {
     _stdoutSub = null;
     _process?.kill();
     _process = null;
+    _flutterJsRuntime?.dispose();
+    _flutterJsRuntime = null;
+    _usingFlutterJs = false;
     for (final completer in _completerQueue) {
       if (!completer.isCompleted) {
         completer.completeError(NodeRunnerError("Process closed"));
@@ -177,3 +222,4 @@ class NodeRunner {
     _completerQueue.clear();
   }
 }
+

@@ -19,11 +19,25 @@ A lightweight and powerful YouTube and YouTube Music content extraction library 
 
 ## Prerequisites
 
-Make sure you have **Node.js** installed on your system, as it is required by the JavaScript runner to execute signature decryption algorithms dynamically. Verify Node installation:
+By default in a pure Dart VM environment, make sure you have **Node.js** installed on your system, as it is required by the JavaScript runner to execute signature decryption algorithms dynamically. Verify Node installation:
 
 ```bash
 node --version
 ```
+
+### Using `flutter_js` without Node.js
+
+> **Q: If Node.js is not installed on the system, is it possible/okay to use `flutter_js`?**
+
+Yes, it is completely fine and recommended to use `flutter_js` without installing Node.js on your system.
+
+Instead of spawning an external CLI tool like Node.js, `flutter_js` bundles lightweight, native C-based JavaScript runtimes directly into your app binary via Dart FFI (using **QuickJS** on Android/Desktop and **JavaScriptCore** on iOS).
+
+#### Key Trade-offs & Notes:
+- **SDK Dependency**: Adding `flutter_js` requires the Flutter SDK (`darttubefix` becomes a Flutter package rather than a pure Dart VM package).
+- **Platform Support**: Works seamlessly on Android, iOS, Windows, macOS, and Linux out of the box without requiring end-users or developers to install any background runtimes like Node.js.
+
+If your primary focus is supporting Flutter mobile apps (Android & iOS), integrating `flutter_js` is the easiest path to eliminate the system Node.js requirement.
 
 ---
 

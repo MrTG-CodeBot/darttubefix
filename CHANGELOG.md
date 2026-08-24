@@ -1,3 +1,8 @@
+## 1.0.5
+
+- Added `flutter_js` dependency and integrated native embedded JavaScript engine fallback so signature deciphering works seamlessly on mobile devices/systems without Node.js installed.
+- Updated documentation and prerequisites for `flutter_js`.
+
 ## 1.0.4
 
 - Added stream URL output to example scripts.
