@@ -26,6 +26,7 @@ class StreamQuery {
     bool? adaptive,
     bool? isDash,
     bool? isDrc,
+    bool? isSabr,
   }) {
     var streams = List<Stream>.from(fmtStreams);
 
@@ -86,6 +87,10 @@ class StreamQuery {
 
     if (isDrc != null) {
       streams = streams.where((s) => s.isDrc == isDrc).toList();
+    }
+
+    if (isSabr != null) {
+      streams = streams.where((s) => s.isSabr == isSabr).toList();
     }
 
     return StreamQuery(streams);
@@ -162,19 +167,35 @@ class StreamQuery {
     return null;
   }
 
+  StreamQuery get audioOnly => filter(onlyAudio: true, isSabr: false);
+  StreamQuery get videoOnly => filter(onlyVideo: true, isSabr: false);
+  StreamQuery get progressiveStreams => filter(progressive: true, isSabr: false);
+  StreamQuery get videoStreams => StreamQuery(fmtStreams.where((s) => s.includesVideoTrack && !s.isSabr).toList());
+  StreamQuery get allPlayable => StreamQuery(fmtStreams.where((s) => !s.isSabr).toList());
+
   Stream? get lowestResolution {
-    final progressiveStreams = filter(progressive: true, subtype: "mp4").orderBy("resolution");
-    return progressiveStreams.first;
+    final progressive = filter(progressive: true, subtype: "mp4").orderBy("resolution");
+    return progressive.first;
   }
 
   Stream? get highestResolution {
-    final progressiveStreams = filter(progressive: true).orderBy("resolution");
-    return progressiveStreams.last;
+    final progressive = filter(progressive: true).orderBy("resolution");
+    return progressive.last;
   }
 
-  Stream? getAudioOnly({String subtype = "mp4"}) {
-    final audioStreams = filter(onlyAudio: true, subtype: subtype).orderBy("abr");
-    return audioStreams.last;
+  Stream? get bestAudio {
+    final audioStreams = audioOnly.orderBy("abr");
+    return audioStreams.fmtStreams.isNotEmpty ? audioStreams.last : null;
+  }
+
+  Stream? getAudioOnly({String? subtype = "mp4"}) {
+    if (subtype != null && subtype.isNotEmpty) {
+      final audioStreams = filter(onlyAudio: true, subtype: subtype, isSabr: false).orderBy("abr");
+      if (audioStreams.fmtStreams.isNotEmpty) {
+        return audioStreams.last;
+      }
+    }
+    return bestAudio;
   }
 
   Stream? get first {

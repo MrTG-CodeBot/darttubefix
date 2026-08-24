@@ -457,7 +457,7 @@ class InnerTube {
   final bool usePoToken;
 
   InnerTube({
-    this.clientName = 'ANDROID_VR',
+    this.clientName = 'MWEB',
     this.useOauth = false,
     this.allowCache = true,
     this.usePoToken = false,

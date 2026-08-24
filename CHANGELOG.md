@@ -1,3 +1,8 @@
+## 1.0.4
+
+- Added stream URL output to example scripts.
+- Added Flutter example app in `example/flutter_example` featuring stream inspection, live download progress tracking, and buffered cache-and-play streaming playback.
+
 ## 1.0.3
 
 - Added client name alias support (`TVHTML5` -> `TV`, `WEB_REMIX` -> `WEB_MUSIC`) in `InnerTube`.

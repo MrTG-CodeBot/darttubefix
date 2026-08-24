@@ -1,29 +1,61 @@
 import 'package:darttubefix/darttubefix.dart';
 
 void main() async {
-  final yt = YouTube('https://www.youtube.com/watch?v=r8iPHiciQd0');
+  final url = 'https://www.youtube.com/watch?v=-mpP5nkKolc';
+  print('==================================================');
+  print('       DARTTUBEFIX: STREAM & DOWNLOAD EXAMPLE     ');
+  print('==================================================');
+  print('Fetching playable stream links for: $url\n');
+
+  final yt = YouTube(url);
 
   try {
     final StreamQuery streamQuery = await yt.streams;
-    print('Total streams found: ${streamQuery.fmtStreams.length}');
-    for (final s in streamQuery.fmtStreams) {
-      print('Stream: itag=${s.itag}, resolution=${s.resolution}, mimeType=${s.mimeType}');
-      print('  URL: ${s.url}');
+
+    print('==================================================');
+    print('          PLAYABLE AUDIO-ONLY STREAMS             ');
+    print('==================================================');
+    for (final s in streamQuery.audioOnly.fmtStreams) {
+      final abr = s.abr != null ? ' ${s.abr}' : '';
+      print('itag ${s.itag} (${s.mimeType},$abr) ✅ Playable');
+      print('URL: ${s.url}\n');
     }
 
-    final Stream? highest = streamQuery.highestResolution;
-    if (highest != null) {
-      print('\nHighest resolution progressive stream: ${highest.resolution}');
-      print('URL: ${highest.url}');
+    print('==================================================');
+    print(' PROGRESSIVE COMBINED STREAMS (VIDEO + AUDIO)     ');
+    print('==================================================');
+    for (final s in streamQuery.progressiveStreams.fmtStreams) {
+      final res = s.resolution != null ? ' ${s.resolution}' : '';
+      print('itag ${s.itag} (${s.mimeType},$res Progressive Video+Audio) ✅ Playable');
+      print('URL: ${s.url}\n');
     }
 
-    final Stream? audio = streamQuery.getAudioOnly();
-    if (audio != null) {
-      print('\nBest audio-only stream: ${audio.abr}');
-      print('URL: ${audio.url}');
+    print('==================================================');
+    print('       AUTO DOWNLOADING BEST AUDIO/MP4 STREAM     ');
+    print('==================================================');
+    final bestAudio = streamQuery.getAudioOnly(subtype: 'mp4') ?? streamQuery.bestAudio;
+    if (bestAudio != null) {
+      final filename = 'play_audio_example.${bestAudio.subtype}';
+      print('Downloading Best Audio (itag ${bestAudio.itag}, ${bestAudio.mimeType}) to $filename...');
+      print('URL: ${bestAudio.url}\n');
+
+      final downloadedFile = await bestAudio.download(
+        filename,
+        onProgress: (downloadedBytes, totalBytes) {
+          if (totalBytes > 0) {
+            final percent = ((downloadedBytes / totalBytes) * 100).toStringAsFixed(1);
+            print('Downloading... $downloadedBytes / $totalBytes bytes ($percent%)');
+          }
+        },
+      );
+
+      print('\n[SUCCESS] Audio file downloaded and saved successfully!');
+      print('Path: ${downloadedFile.absolute.path}');
+      print('Size: ${(downloadedFile.lengthSync() / (1024 * 1024)).toStringAsFixed(2)} MB');
+      print('This file can now be opened & played in VLC, Windows Media Player, or Flutter AudioPlayer!');
     }
   } catch (e, stack) {
-    print('Failed to get video stream URL: $e');
+    print('Failed to process video streams: $e');
     print(stack);
   }
 }

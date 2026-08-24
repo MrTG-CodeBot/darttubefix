@@ -614,18 +614,27 @@ class Cipher {
       }
 
       // Strategy 2: var XX = [YY]
-      final strategy2Match = RegExp(r"var\s*[a-zA-Z0-9$_]{2,3}\s*=\s*\[(?<funcname>[a-zA-Z0-9$_]{2,})\]").firstMatch(js) as RegExpMatch?;
-      if (strategy2Match != null) {
-        final nFunc = strategy2Match.namedGroup("funcname")!;
-        if (globalObj != null && varname != null) {
-          final xorParams = _extractXorBranchNsigParams(js, nFunc, varname, globalObj);
-          if (xorParams != null) {
-            _nsigParamVal = xorParams;
-          } else {
-            _nsigParamVal = _extractNsigParamVal(js, nFunc);
+      for (final Match m in RegExp(r"var\s*[a-zA-Z0-9$_]{2,5}\s*=\s*\[(?<funcname>[a-zA-Z0-9$_]{2,})\]").allMatches(js)) {
+        final nFunc = (m as RegExpMatch).namedGroup("funcname")!;
+        final funcDef = RegExp(
+          r'(?:function\s+' + RegExp.escape(nFunc) +
+          r'|(?:var\s+)?' + RegExp.escape(nFunc) + r'\s*=\s*function)\s*\('
+        ).firstMatch(js);
+        if (funcDef == null) continue;
+
+        final funcStart = funcDef.start;
+        final funcArea = js.substring(funcStart, funcStart + 2000 < js.length ? funcStart + 2000 : js.length);
+        if (funcArea.contains('try') || funcArea.contains('catch') || funcArea.contains('split')) {
+          if (globalObj != null && varname != null) {
+            final xorParams = _extractXorBranchNsigParams(js, nFunc, varname, globalObj);
+            if (xorParams != null) {
+              _nsigParamVal = xorParams;
+            } else {
+              _nsigParamVal = _extractNsigParamVal(js, nFunc);
+            }
           }
+          return nFunc;
         }
-        return nFunc;
       }
 
       // Strategy 2.5: Multi-branch XOR nsig function (2025+ obfuscation)

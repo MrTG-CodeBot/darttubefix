@@ -14,7 +14,7 @@ class YouTube {
   late final String embedUrl;
 
   String client;
-  final List<String> fallbackClients = ['TV', 'IOS'];
+  final List<String> fallbackClients = ['WEB_MUSIC', 'WEB', 'IOS', 'ANDROID_VR'];
 
   String? _watchHtml;
   String? _embedHtml;
@@ -33,7 +33,7 @@ class YouTube {
 
   YouTube(
     this.url, {
-    this.client = 'ANDROID_VR',
+    this.client = 'MWEB',
     Function? onProgressCallback,
     Function? onCompleteCallback,
     this.poToken,
@@ -84,6 +84,9 @@ class YouTube {
         final html = await watchHtml;
         if (!html.contains("recaptcha")) {
           _jsUrl = extract.jsUrl(html);
+          if (_jsUrl != null && _jsUrl!.contains('player_embed_tce')) {
+            _jsUrl = 'https://www.youtube.com/s/player/2574220e/player_embed.vflset/en_US/base.js';
+          }
           return _jsUrl!;
         }
       } catch (_) {
@@ -95,6 +98,9 @@ class YouTube {
     try {
       final html = await embedHtml;
       _jsUrl = extract.jsUrl(html);
+      if (_jsUrl != null && _jsUrl!.contains('player_embed_tce')) {
+        _jsUrl = 'https://www.youtube.com/s/player/2574220e/player_embed.vflset/en_US/base.js';
+      }
     } catch (e) {
       throw ExtractError("Could not extract player js URL from watch or embed HTML: $e");
     }
@@ -274,12 +280,9 @@ class YouTube {
         final jsUrlStr = await jsUrl;
         await extract.applySignature(streamManifest, await vidInfo, jsCode, jsUrlStr);
       } catch (_) {
-        // Force update player js code
-        _js = null;
-        _jsUrl = null;
-        final jsCode = await js;
-        final jsUrlStr = await jsUrl;
-        await extract.applySignature(streamManifest, await vidInfo, jsCode, jsUrlStr);
+        const fallbackJsUrl = 'https://www.youtube.com/s/player/2574220e/player_embed.vflset/en_US/base.js';
+        final fallbackJsCode = await getRequest(fallbackJsUrl);
+        await extract.applySignature(streamManifest, await vidInfo, fallbackJsCode, fallbackJsUrl);
       }
     }
 
@@ -289,6 +292,7 @@ class YouTube {
         monostate: streamMonostate,
         poToken: poToken,
         videoPlaybackUstreamerConfig: (await vidInfo)['playerConfig']?['mediaCommonConfig']?['mediaUstreamerRequestConfig']?['videoPlaybackUstreamerConfig'],
+        parentStreams: _fmtStreams,
       );
       _fmtStreams!.add(video);
     }

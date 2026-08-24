@@ -1,8 +1,7 @@
 import 'package:darttubefix/darttubefix.dart';
 
 void main() async {
-  final sampleUrl =
-      'https://music.youtube.com/watch?v=y9VW61sgfWQ&list=RDAMVMy9VW61sgfWQ';
+  final sampleUrl = 'https://music.youtube.com/watch?v=mpP5nkKolc';
 
   // Option 1: Direct MusicRelated instance
   final related = MusicRelated(sampleUrl);

@@ -1,3 +1,6 @@
+import 'dart:async' as async;
+import 'dart:io';
+import 'package:http/http.dart' as http;
 import 'monostate.dart';
 import 'extract.dart';
 import 'itags.dart';
@@ -7,6 +10,7 @@ class Stream {
   final Monostate monostate;
   final String? poToken;
   final dynamic videoPlaybackUstreamerConfig;
+  final List<Stream>? parentStreams;
 
   late final String url;
   late final int itag;
@@ -39,6 +43,7 @@ class Stream {
     required this.monostate,
     this.poToken,
     this.videoPlaybackUstreamerConfig,
+    this.parentStreams,
   }) {
     url = streamData["url"] ?? '';
     itag = int.tryParse(streamData["itag"]?.toString() ?? '0') ?? 0;
@@ -110,5 +115,103 @@ class Stream {
   @override
   String toString() {
     return "<Stream: itag=$itag mimeType=$mimeType resolution=$resolution progressive=$isProgressive type=$type url=$url>";
+  }
+
+  /// Downloads the stream content into a local file cleanly without 403 throttling errors.
+  Future<File> download(String outputPath, {void Function(int downloadedBytes, int totalBytes)? onProgress}) async {
+    final outputFile = File(outputPath);
+    final sink = outputFile.openWrite();
+    final client = http.Client();
+
+    final chunkSize = 512 * 1024;
+    final totalBytes = filesize;
+    var start = 0;
+    var downloadedBytes = 0;
+
+    try {
+      while (start < totalBytes || totalBytes == 0) {
+        final end = totalBytes > 0 
+            ? (start + chunkSize - 1 < totalBytes ? start + chunkSize - 1 : totalBytes - 1)
+            : start + chunkSize - 1;
+
+        final req = http.Request('GET', Uri.parse(url));
+        req.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)';
+        req.headers['Accept'] = '*/*';
+        req.headers['Range'] = 'bytes=$start-$end';
+
+        final res = await client.send(req);
+        if (res.statusCode == 200 || res.statusCode == 206) {
+          var bytesInChunk = 0;
+          await for (final chunk in res.stream) {
+            bytesInChunk += chunk.length;
+            downloadedBytes += chunk.length;
+            sink.add(chunk);
+            onProgress?.call(downloadedBytes, totalBytes);
+          }
+
+          if (bytesInChunk == 0 || (totalBytes > 0 && downloadedBytes >= totalBytes)) {
+            break;
+          }
+          start = end + 1;
+        } else {
+          // Fallback to progressive stream if adaptive stream is throttled by YouTube CDN
+          if (parentStreams != null && parentStreams!.isNotEmpty) {
+            final progList = parentStreams!.where((s) => s.isProgressive && !s.isSabr).toList();
+            if (progList.isNotEmpty) {
+              final prog = progList.first;
+              if (prog.itag != itag && prog.url.isNotEmpty) {
+                await sink.close();
+                client.close();
+                return await prog.download(outputPath, onProgress: onProgress);
+              }
+            }
+          }
+          throw Exception('HTTP ${res.statusCode} on range bytes=$start-$end');
+        }
+      }
+    } finally {
+      await sink.close();
+      client.close();
+    }
+
+    return outputFile;
+  }
+
+  /// Returns a stream of byte chunks for this media stream.
+  async.Stream<List<int>> getByteStream() async* {
+    final client = http.Client();
+    final chunkSize = 512 * 1024;
+    final totalBytes = filesize;
+    var start = 0;
+
+    try {
+      while (start < totalBytes || totalBytes == 0) {
+        final end = totalBytes > 0 
+            ? (start + chunkSize - 1 < totalBytes ? start + chunkSize - 1 : totalBytes - 1)
+            : start + chunkSize - 1;
+
+        final req = http.Request('GET', Uri.parse(url));
+        req.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)';
+        req.headers['Accept'] = '*/*';
+        req.headers['Range'] = 'bytes=$start-$end';
+
+        final res = await client.send(req);
+        if (res.statusCode == 200 || res.statusCode == 206) {
+          var bytesInChunk = 0;
+          await for (final chunk in res.stream) {
+            bytesInChunk += chunk.length;
+            yield chunk;
+          }
+          if (bytesInChunk == 0 || (totalBytes > 0 && start >= totalBytes)) {
+            break;
+          }
+          start = end + 1;
+        } else {
+          throw Exception('HTTP ${res.statusCode} on range bytes=$start-$end');
+        }
+      }
+    } finally {
+      client.close();
+    }
   }
 }
