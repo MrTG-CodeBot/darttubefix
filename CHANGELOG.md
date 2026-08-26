@@ -1,3 +1,8 @@
+## 1.0.6
+
+- Fixed audio stream download handlers and range-request HTTP chunking.
+- Added comprehensive stream audio downloading example script.
+
 ## 1.0.5
 
 - Added `flutter_js` dependency and integrated native embedded JavaScript engine fallback so signature deciphering works seamlessly on mobile devices/systems without Node.js installed.
