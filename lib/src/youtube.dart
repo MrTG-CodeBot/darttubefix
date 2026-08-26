@@ -274,15 +274,45 @@ class YouTube {
       extract.applyPoToken(streamManifest, await vidInfo, poToken!);
     }
 
+    bool signatureAppliedSuccessfully = false;
+
     if (innerTube.requireJsPlayer) {
       try {
         final jsCode = await js;
         final jsUrlStr = await jsUrl;
         await extract.applySignature(streamManifest, await vidInfo, jsCode, jsUrlStr);
+        signatureAppliedSuccessfully = true;
       } catch (_) {
-        const fallbackJsUrl = 'https://www.youtube.com/s/player/2574220e/player_embed.vflset/en_US/base.js';
-        final fallbackJsCode = await getRequest(fallbackJsUrl);
-        await extract.applySignature(streamManifest, await vidInfo, fallbackJsCode, fallbackJsUrl);
+        try {
+          const fallbackJsUrl = 'https://www.youtube.com/s/player/2574220e/player_embed.vflset/en_US/base.js';
+          final fallbackJsCode = await getRequest(fallbackJsUrl);
+          await extract.applySignature(streamManifest, await vidInfo, fallbackJsCode, fallbackJsUrl);
+          signatureAppliedSuccessfully = true;
+        } catch (_) {
+          signatureAppliedSuccessfully = false;
+        }
+      }
+
+      // Dual fallback: If JS deciphering failed or JS engine is absent, fallback to API Fallback Clients
+      if (!signatureAppliedSuccessfully) {
+        for (final fallbackClient in ['ANDROID_VR', 'TVHTML5_SIMPLY_EMBEDDED_PLAYER', 'IOS']) {
+          try {
+            final fallbackInfo = await vidInfoClient(optionalClient: fallbackClient);
+            if (fallbackInfo.containsKey('streamingData')) {
+              final fallbackManifest = extract.applyDescrambler(fallbackInfo['streamingData'] as Map<String, dynamic>) ?? [];
+              if (fallbackManifest.isNotEmpty && fallbackManifest.any((s) => s.containsKey('url'))) {
+                _fmtStreams = fallbackManifest.map((s) => Stream(
+                  streamData: s,
+                  monostate: streamMonostate,
+                  poToken: poToken,
+                  videoPlaybackUstreamerConfig: fallbackInfo['playerConfig']?['mediaCommonConfig']?['mediaUstreamerRequestConfig']?['videoPlaybackUstreamerConfig'],
+                  parentStreams: _fmtStreams,
+                )).toList();
+                return _fmtStreams!;
+              }
+            }
+          } catch (_) {}
+        }
       }
     }
 

@@ -96,7 +96,11 @@ String visitorData(String responseContext) {
 }
 
 String videoId(String url) {
-  return regexSearch(r"(?:v=|\/)([0-9A-Za-z_-]{11}).*", url, 1);
+  final trimmed = url.trim();
+  if (RegExp(r'^[0-9A-Za-z_-]{11}$').hasMatch(trimmed)) {
+    return trimmed;
+  }
+  return regexSearch(r"(?:v=|\/)([0-9A-Za-z_-]{11}).*", trimmed, 1);
 }
 
 String playlistId(String url) {

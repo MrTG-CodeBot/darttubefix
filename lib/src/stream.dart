@@ -149,7 +149,7 @@ class Stream {
             onProgress?.call(downloadedBytes, totalBytes);
           }
 
-          if (bytesInChunk == 0 || (totalBytes > 0 && downloadedBytes >= totalBytes)) {
+          if (res.statusCode == 200 || bytesInChunk == 0 || (totalBytes > 0 && downloadedBytes >= totalBytes)) {
             break;
           }
           start = end + 1;

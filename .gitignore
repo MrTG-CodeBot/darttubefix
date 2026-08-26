@@ -13,3 +13,8 @@ pubspec.lock
 /scratch_debug.dart
 /test_nsig_debug.dart
 .vscode/
+*.mp4
+build/
+out.txt
+.flutter-plugins-dependencies
+
