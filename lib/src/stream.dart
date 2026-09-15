@@ -124,6 +124,20 @@ class Stream {
     return "<Stream: itag=$itag mimeType=$mimeType resolution=$resolution progressive=$isProgressive type=$type url=$url>";
   }
 
+  /// Returns the stream URL with optional range parameter appended (mirroring pytubefix request.py).
+  String getUrlWithRange([int start = 0, int? end]) {
+    if (url.isEmpty) return url;
+    try {
+      final uri = Uri.parse(url);
+      final params = Map<String, String>.from(uri.queryParameters);
+      final targetEnd = end ?? (filesize > 0 ? filesize - 1 : 99999999999);
+      params['range'] = '$start-$targetEnd';
+      return uri.replace(queryParameters: params).toString();
+    } catch (_) {
+      return url;
+    }
+  }
+
   /// Downloads the stream content into a local file cleanly without 403 throttling errors.
   Future<File> download(String outputPath, {void Function(int downloadedBytes, int totalBytes)? onProgress}) async {
     final outputFile = File(outputPath);
@@ -141,7 +155,8 @@ class Stream {
             ? (start + chunkSize - 1 < totalBytes ? start + chunkSize - 1 : totalBytes - 1)
             : start + chunkSize - 1;
 
-        final req = http.Request('GET', Uri.parse(url));
+        final targetUrl = getUrlWithRange(start, end);
+        final req = http.Request('GET', Uri.parse(targetUrl));
         req.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)';
         req.headers['Accept'] = '*/*';
         req.headers['Range'] = 'bytes=$start-$end';
@@ -197,7 +212,8 @@ class Stream {
             ? (start + chunkSize - 1 < totalBytes ? start + chunkSize - 1 : totalBytes - 1)
             : start + chunkSize - 1;
 
-        final req = http.Request('GET', Uri.parse(url));
+        final targetUrl = getUrlWithRange(start, end);
+        final req = http.Request('GET', Uri.parse(targetUrl));
         req.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)';
         req.headers['Accept'] = '*/*';
         req.headers['Range'] = 'bytes=$start-$end';

@@ -273,9 +273,12 @@ Future<void> applySignature(
 
       // 403 Forbidden fix.
       if (url.contains("signature") || 
-          (!stream.containsKey("s") && (url.contains("&sig=") || url.contains("&lsig=")))) {
-        // Pre-signed
-      } else {
+          url.contains("&sig=") || 
+          url.contains("&lsig=") || 
+          queryParams.containsKey("sig") || 
+          queryParams.containsKey("lsig")) {
+        // Pre-signed by YouTube CDN (e.g. VISION_OS, IOS, ANDROID)
+      } else if (stream.containsKey("s") && (stream["s"] as String).isNotEmpty) {
         final s = stream["s"] as String;
         final signature = await cipher.getSig(s);
         final spKey = stream["sp"] as String? ?? "sig";

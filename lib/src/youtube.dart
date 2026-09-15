@@ -14,7 +14,7 @@ class YouTube {
   late final String embedUrl;
 
   String client;
-  final List<String> fallbackClients = ['TVHTML5_SIMPLY_EMBEDDED_PLAYER', 'WEB_MUSIC', 'WEB', 'IOS', 'ANDROID_VR'];
+  final List<String> fallbackClients = ['VISION_OS', 'IOS', 'ANDROID_VR', 'ANDROID_TESTSUITE', 'TVHTML5_SIMPLY_EMBEDDED_PLAYER', 'WEB_MUSIC', 'WEB'];
 
   String? _watchHtml;
   String? _embedHtml;
@@ -33,7 +33,7 @@ class YouTube {
 
   YouTube(
     this.url, {
-    this.client = 'TVHTML5_SIMPLY_EMBEDDED_PLAYER',
+    this.client = 'VISION_OS',
     Function? onProgressCallback,
     Function? onCompleteCallback,
     this.poToken,
@@ -268,8 +268,6 @@ class YouTube {
     final streamData = await streamingData;
     final streamManifest = extract.applyDescrambler(streamData) ?? [];
 
-    final innerTube = InnerTube(clientName: client);
-
     if (poToken != null) {
       extract.applyPoToken(streamManifest, await vidInfo, poToken!);
     }
@@ -394,8 +392,6 @@ class YouTube {
       } else if (status == 'OK') {
         if (reason == 'This live event has ended.') {
           throw LiveStreamEnded(videoId, reason);
-        } else {
-          throw UnknownVideoError(videoId, status: status, reason: reason, developerMessage: 'Unknown video status');
         }
       } else if (status == null) {
         // Ok
@@ -415,12 +411,27 @@ class YouTube {
     // Fallback: search in vidDetails
     try {
       final nextDetails = await vidDetails;
-      final contents = nextDetails['contents']?['twoColumnWatchNextResults']?['results']?['results']?['contents'] as List?;
-      if (contents != null) {
-        for (final item in contents) {
-          if (item.containsKey('videoPrimaryInfoRenderer')) {
-            final t = item['videoPrimaryInfoRenderer']?['title']?['runs']?[0]?['text'] as String?;
+      final contents = nextDetails['contents'] as Map<String, dynamic>? ?? {};
+      if (contents.containsKey('singleColumnWatchNextResults')) {
+        final itemSection = contents['singleColumnWatchNextResults']?['results']?['results']?['contents']?[0]?['itemSectionRenderer']?['contents']?[0];
+        if (itemSection != null) {
+          if (itemSection.containsKey('videoMetadataRenderer')) {
+            final t = itemSection['videoMetadataRenderer']?['title']?['runs']?[0]?['text'] as String?;
             if (t != null) return t;
+          } else if (itemSection.containsKey('musicWatchMetadataRenderer')) {
+            final t = itemSection['musicWatchMetadataRenderer']?['title']?['simpleText'] as String? ??
+                      itemSection['musicWatchMetadataRenderer']?['title']?['runs']?[0]?['text'] as String?;
+            if (t != null) return t;
+          }
+        }
+      } else if (contents.containsKey('twoColumnWatchNextResults')) {
+        final list = contents['twoColumnWatchNextResults']?['results']?['results']?['contents'] as List?;
+        if (list != null) {
+          for (final item in list) {
+            if (item.containsKey('videoPrimaryInfoRenderer')) {
+              final t = item['videoPrimaryInfoRenderer']?['title']?['runs']?[0]?['text'] as String?;
+              if (t != null) return t;
+            }
           }
         }
       }

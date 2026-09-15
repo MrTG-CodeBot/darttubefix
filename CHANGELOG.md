@@ -1,3 +1,11 @@
+## 1.0.8
+
+- Integrated `VISION_OS` and `ANDROID_VR` client configurations matching Python `pytubefix` for direct, pre-signed stream URLs.
+- Fixed signature descrambler to preserve pre-signed CDN stream signatures (`sig` / `lsig`), eliminating 403 authorization errors.
+- Added `singleColumnWatchNextResults` and `musicWatchMetadataRenderer` title extraction fallback for YouTube Music tracks.
+- Added `stream.getUrlWithRange()` to format range-based stream URLs mirroring `pytubefix` request logic.
+- Resolved playability status check bug where videos with status `OK` threw `UnknownVideoError`.
+
 ## 1.0.7
 
 - Fixed stream URL deciphering (`n`-signature cipher) across all InnerTube clients and fallback manifests, eliminating HTTP 403 Forbidden errors.

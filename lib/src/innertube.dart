@@ -418,6 +418,28 @@ final Map<String, ClientConfig> defaultClients = {
     requireJsPlayer: true,
     requirePoToken: false,
   ),
+  'VISION_OS': ClientConfig(
+    innertubeContext: {
+      'context': {
+        'client': {
+          'clientName': 'VISIONOS',
+          'clientVersion': '1.02',
+          'deviceMake': 'Apple',
+          'platform': 'MOBILE',
+          'osName': 'visionOS',
+          'osVersion': '26.5.23O471',
+          'deviceModel': 'RealityDevice17,1'
+        }
+      }
+    },
+    header: {
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15',
+      'X-Youtube-Client-Name': '101'
+    },
+    apiKey: 'AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc',
+    requireJsPlayer: false,
+    requirePoToken: false,
+  ),
   'MEDIA_CONNECT': ClientConfig(
     innertubeContext: {
       'context': {
