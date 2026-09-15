@@ -63,7 +63,7 @@ class Stream {
     
     final itagProfile = getFormatProfile(itag.toString());
     isDash = itagProfile["is_dash"] == true;
-    abr = itagProfile["abr"];
+    abr = itagProfile["abr"] ?? (bitrate != null && bitrate! > 0 ? '${(bitrate! ~/ 1000)}kbps' : null);
     
     if (streamData.containsKey('fps')) {
       fps = int.tryParse(streamData['fps']?.toString() ?? '0');
@@ -88,6 +88,13 @@ class Stream {
     videoCodec = parsed[0];
     audioCodec = parsed[1];
   }
+
+  /// Headers required by HTTP clients and audio/video players (e.g. just_audio, audioplayers, video_player) to stream cleanly without 403 Forbidden errors.
+  Map<String, String> get httpHeaders => {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Range': 'bytes=0-1024',
+    'Accept': '*/*',
+  };
 
   bool get isAdaptive => codecs.length == 1; // if codecs length is 1, it only has video or only audio, hence adaptive
   bool get isProgressive => !isAdaptive;

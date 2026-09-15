@@ -242,7 +242,7 @@ class MusicRelated {
 
       final shelfItems = <dynamic>[];
 
-      if (titleLower.contains('recommended playlist')) {
+      if (titleLower.contains('playlist') || titleLower.contains('recommended')) {
         for (final item in items) {
           final playlist = _parsePlaylist(item);
           if (playlist != null) {
@@ -250,7 +250,7 @@ class MusicRelated {
             shelfItems.add(playlist);
           }
         }
-      } else if (titleLower.contains('similar artist')) {
+      } else if (titleLower.contains('artist') || titleLower.contains('similar') || titleLower.contains('fans also')) {
         for (final item in items) {
           final artist = _parseArtist(item);
           if (artist != null) {
@@ -260,7 +260,7 @@ class MusicRelated {
         }
       } else if (strapline.toLowerCase().contains('more from') ||
                  titleLower.contains('more from') ||
-                 (!titleLower.contains('you might also like') && _moreFromArtist.isEmpty)) {
+                 _moreFromArtist.isEmpty) {
         if (_moreFromArtist.isEmpty) {
           _moreFromArtistTitle = headerTitle;
         }
@@ -277,6 +277,14 @@ class MusicRelated {
           if (relItem != null) {
             shelfItems.add(relItem);
           }
+        }
+      }
+
+      // Also extract artists from items if any exist
+      for (final item in items) {
+        final artist = _parseArtist(item);
+        if (artist != null && !_similarArtists.any((a) => a.channelId == artist.channelId)) {
+          _similarArtists.add(artist);
         }
       }
 

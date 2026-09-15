@@ -103,7 +103,7 @@ class StreamQuery {
         case 'fps': return s.fps != null;
         case 'bitrate': return s.bitrate != null;
         case 'filesize': return s.filesize > 0;
-        case 'abr': return s.abr != null;
+        case 'abr': return s.abr != null || s.bitrate != null;
         default: return false;
       }
     }).toList();
@@ -129,8 +129,8 @@ class StreamQuery {
           valB = b.filesize;
           break;
         case 'abr':
-          valA = _parseNumberOnly(a.abr ?? '');
-          valB = _parseNumberOnly(b.abr ?? '');
+          valA = a.bitrate ?? _parseNumberOnly(a.abr ?? '');
+          valB = b.bitrate ?? _parseNumberOnly(b.abr ?? '');
           break;
         default:
           return 0;
@@ -184,13 +184,17 @@ class StreamQuery {
   }
 
   Stream? get bestAudio {
+    final mp4Audio = filter(onlyAudio: true, subtype: "mp4").orderBy("abr");
+    if (mp4Audio.fmtStreams.isNotEmpty) {
+      return mp4Audio.last;
+    }
     final audioStreams = audioOnly.orderBy("abr");
     return audioStreams.fmtStreams.isNotEmpty ? audioStreams.last : null;
   }
 
   Stream? getAudioOnly({String? subtype = "mp4"}) {
     if (subtype != null && subtype.isNotEmpty) {
-      final audioStreams = filter(onlyAudio: true, subtype: subtype, isSabr: false).orderBy("abr");
+      final audioStreams = filter(onlyAudio: true, subtype: subtype).orderBy("abr");
       if (audioStreams.fmtStreams.isNotEmpty) {
         return audioStreams.last;
       }

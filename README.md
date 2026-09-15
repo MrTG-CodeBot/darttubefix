@@ -1,19 +1,22 @@
 # darttubefix
 
-A lightweight and powerful YouTube and YouTube Music content extraction library for Dart and Flutter, translated and adapted from the popular Python package [`pytubefix`](https://github.com/JuanBindez/pytubefix).
+A lightweight, high-performance YouTube and YouTube Music content scraping & extraction library for Dart and Flutter, translated and adapted from the popular Python package [`pytubefix`](https://github.com/JuanBindez/pytubefix).
 
-`darttubefix` allows you to extract video metadata, stream URLs, perform YouTube searches, decipher signatures/n-signatures dynamically, and extract YouTube Music "Related" content (playlists, similar artists, artist bio) seamlessly in Dart.
+`darttubefix` allows you to extract video & music metadata, fetch direct playable audio/video stream URLs, perform YouTube & YouTube Music searches, decipher signatures/n-signatures dynamically, download audio/video files, and scrape YouTube Music "Related" content (playlists, similar artists, artist bio) seamlessly in Dart.
+
+> 📖 **Looking for a dedicated guide?** Check out [YOUTUBE_MUSIC_SCRAPING.md](YOUTUBE_MUSIC_SCRAPING.md) for a step-by-step tutorial on scraping YouTube Music directly from links.
 
 ---
 
 ## Features
 
-- **Video Details & Streams**: Retrieve video title, author, length, thumbnails, and audio/video stream formats (progressive, adaptive, audio-only).
-- **Signature & N-Signature Decryption**: Built-in dynamic JS runner to decipher YouTube signature and n-signature parameters for playability.
-- **YouTube Search**: Search for videos, songs, artists/channels, playlists, and albums with support for pagination (`next()`).
-- **YouTube Music Related Content**: Fetch "Recommended playlists", "Similar artists", "MORE FROM Artist", and "About the artist" details for any YouTube Music track or video.
-- **Client Fallbacks**: Intelligent InnerTube client fallbacks (`WEB`, `WEB_MUSIC`, `ANDROID_VR`, `TV`, `IOS`, etc.) for maximum availability.
-- **Cross-Platform**: Fully compatible with Dart VM, Flutter (Android, iOS, Desktop), and server-side Dart.
+- **YouTube Music Scraping**: Scrape song details, artist information, similar artists, recommended playlists, and artist bio.
+- **Audio & Video Streams**: Extract direct playable audio stream URLs (M4A/AAC, WebM) and progressive video streams without throttling.
+- **Dynamic Signature & N-Sig Decryption**: Built-in dynamic JS runner to decipher YouTube signature and n-signature parameters for 100% playability.
+- **Search Engine**: Search for songs, videos, artists/channels, playlists, and albums with built-in pagination support (`next()`).
+- **Audio Downloader**: Download high-quality audio files directly to disk with live progress callbacks.
+- **Client Fallbacks**: Flexible InnerTube client configurations (`WEB_MUSIC`, `WEB`, `ANDROID_VR`, `TV`, `IOS`, etc.) for maximum uptime.
+- **Cross-Platform Support**: Fully compatible with Dart VM, Flutter (Android, iOS, Windows, macOS, Linux), and server-side Dart.
 
 ---
 
@@ -58,145 +61,221 @@ dart pub add darttubefix
 
 ---
 
-## Code Examples
+## Full Step-by-Step Guide: How to Scrape YouTube Music
 
-### 1. Fetching Video Details & Streams
+Follow these step-by-step instructions to extract tracks, metadata, search results, direct playable audio stream URLs, download audio files, and scrape related YouTube Music recommendations.
 
-```dart
-import 'package:darttubefix/darttubefix.dart';
+### Step 1: Install `darttubefix`
 
-void main() async {
-  final yt = YouTube('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+Add the package to your project as shown in the Installation section above.
 
-  try {
-    // Retrieve video metadata
-    final title = await yt.title;
-    final author = await yt.author;
-    final duration = await yt.length; // Duration in seconds
-    final thumbnail = await yt.thumbnailUrl;
+### Step 2: Search YouTube Music (Songs, Artists, Playlists & Albums)
 
-    print('Title: $title');
-    print('Author: $author');
-    print('Duration: $duration seconds');
-    print('Thumbnail: $thumbnail');
-
-    // Retrieve stream query
-    final streams = await yt.streams;
-
-    // Filter audio-only or highest resolution streams
-    final audioStream = streams.getAudioOnly();
-    final highestRes = streams.highestResolution;
-
-    print('Audio Stream URL: ${audioStream?.url}');
-    print('Highest Res Stream (${highestRes?.resolution}): ${highestRes?.url}');
-  } catch (e) {
-    print('Error: $e');
-  }
-}
-```
-
----
-
-### 2. Searching YouTube (Videos, Artists, Playlists & Albums)
+Use the `Search` class to query YouTube Music and YouTube for content:
 
 ```dart
 import 'package:darttubefix/darttubefix.dart';
 
 void main() async {
-  final search = Search('Taylor Swift');
+  // Initialize search query
+  final search = Search('The Weeknd Blinding Lights');
+  
+  // Fetch initial results
   await search.fetch();
 
-  // Search Results
-  print('Total Results: ${search.results.length}');
+  print('Found ${search.results.length} results\n');
 
-  // Videos & Songs
+  // 1. Scrape Tracks / Videos
+  print('--- Songs / Videos ---');
   for (final video in search.videos.take(5)) {
-    print('Video: ${video.title} (ID: ${video.videoId}, Author: ${video.author})');
+    print('Title  : ${video.title}');
+    print('ID     : ${video.videoId}');
+    print('Author : ${video.author}');
+    print('Length : ${video.length} seconds\n');
   }
 
-  // Channels / Artists
+  // 2. Scrape Artists / Channels
+  print('--- Artists ---');
   for (final artist in search.artists) {
-    print('Artist: ${artist.title} (ID: ${artist.channelId})');
+    print('Artist Name : ${artist.title}');
+    print('Channel ID  : ${artist.channelId}\n');
   }
 
-  // Playlists & Albums
+  // 3. Scrape Playlists & Albums
+  print('--- Playlists & Albums ---');
   for (final playlist in search.playlists) {
-    print('Playlist: ${playlist.title} (ID: ${playlist.playlistId})');
+    print('Playlist Title : ${playlist.title}');
+    print('Playlist ID    : ${playlist.playlistId}\n');
   }
 
-  // Pagination - Load next page of search results
+  // 4. Pagination - Load next page of search results
   if (search.hasMoreResults) {
     await search.next();
-    print('Loaded next page. New total: ${search.results.length}');
+    print('Loaded next page. Total results now: ${search.results.length}');
   }
 }
 ```
 
 ---
 
-### 3. YouTube Music Related Content (Song Detail Page)
+### Step 3: Extract Track Metadata & Direct Playable Audio Stream URLs
 
-Extract "Recommended Playlists", "Similar Artists", "MORE FROM Artist", and "About the artist" section details from any YouTube Music watch page (`https://music.youtube.com/watch?v=...`):
+To stream audio directly inside an audio player (e.g. `just_audio`, `audioplayers`, or VLC), extract the audio streams and decrypt the URL:
 
 ```dart
 import 'package:darttubefix/darttubefix.dart';
 
 void main() async {
-  final musicUrl = 'https://music.youtube.com/watch?v=y9VW61sgfWQ&list=RDAMVMy9VW61sgfWQ';
+  // YouTube Music track URL or Video URL
+  final musicUrl = 'https://music.youtube.com/watch?v=4NRXx6U8ABQ';
+  final yt = YouTube(musicUrl);
 
-  // Option 1: Direct MusicRelated instance
+  try {
+    // Extract metadata
+    final title = await yt.title;
+    final author = await yt.author;
+    final duration = await yt.length;
+    final thumbnail = await yt.thumbnailUrl;
+
+    print('Title     : $title');
+    print('Artist    : $author');
+    print('Duration  : $duration seconds');
+    print('Thumbnail : $thumbnail\n');
+
+    // Fetch stream query with decrypted URLs
+    final streams = await yt.streams;
+
+    // Extract high-quality audio stream (M4A / WebM)
+    final audioStream = streams.getAudioOnly(subtype: 'mp4') ?? streams.bestAudio;
+
+    if (audioStream != null) {
+      print('Audio Stream Format : ${audioStream.mimeType}');
+      print('Bitrate             : ${audioStream.abr}');
+      print('Direct Playable URL : ${audioStream.url}');
+      // You can pass `audioStream.url` directly to your audio player!
+    }
+  } catch (e) {
+    print('Error extracting track: $e');
+  }
+}
+```
+
+---
+
+### Step 4: Download YouTube Music Audio Track to File
+
+Download the extracted audio stream directly to local disk with progress tracking:
+
+```dart
+import 'package:darttubefix/darttubefix.dart';
+
+void main() async {
+  final yt = YouTube('https://music.youtube.com/watch?v=4NRXx6U8ABQ');
+  final streams = await yt.streams;
+  final audioStream = streams.getAudioOnly(subtype: 'mp4') ?? streams.bestAudio;
+
+  if (audioStream != null) {
+    final filePath = 'downloaded_song.${audioStream.subtype}';
+
+    print('Downloading audio to $filePath...');
+    final file = await audioStream.download(
+      filePath,
+      onProgress: (downloadedBytes, totalBytes) {
+        if (totalBytes > 0) {
+          final percentage = ((downloadedBytes / totalBytes) * 100).toStringAsFixed(1);
+          print('Progress: $percentage% ($downloadedBytes / $totalBytes bytes)');
+        }
+      },
+    );
+
+    print('Download Complete! Saved at: ${file.absolute.path}');
+  }
+}
+```
+
+---
+
+### Step 5: Scrape YouTube Music Related Content & Artist Bio
+
+Scrape the YouTube Music sidebar / watch page metadata: **Recommended Playlists**, **Similar Artists**, **More From Artist**, and **Artist Bio/Description**:
+
+```dart
+import 'package:darttubefix/darttubefix.dart';
+
+void main() async {
+  final musicUrl = 'https://music.youtube.com/watch?v=y9VW61sgfWQ';
+
+  // Approach 1: Directly using MusicRelated
   final related = MusicRelated(musicUrl);
   await related.fetch();
 
-  // Recommended Playlists
-  print('--- Recommended Playlists ---');
+  // 1. Recommended Playlists
+  print('=== Recommended Playlists ===');
   for (final playlist in related.recommendedPlaylists) {
-    print('Playlist: ${playlist.title} (ID: ${playlist.playlistId})');
+    print('Title       : ${playlist.title}');
+    print('Playlist ID : ${playlist.playlistId}');
+    print('Thumbnail   : ${playlist.thumbnailUrl}\n');
   }
 
-  // Similar Artists
-  print('\n--- Similar Artists ---');
+  // 2. Similar Artists
+  print('=== Similar Artists ===');
   for (final artist in related.similarArtists) {
-    print('Artist: ${artist.title} (${artist.subscribers ?? ''})');
+    print('Artist Name : ${artist.title}');
+    print('Subscribers : ${artist.subscribers ?? "N/A"}');
+    print('Channel ID  : ${artist.channelId}\n');
   }
 
-  // More From Artist (if available)
+  // 3. More From Artist
   if (related.moreFromArtist.isNotEmpty) {
-    print('\n--- ${related.moreFromArtistTitle} ---');
+    print('=== ${related.moreFromArtistTitle} ===');
     for (final item in related.moreFromArtist) {
-      print('Item: ${item.title}');
+      print('Item Title : ${item.title}');
     }
   }
 
-  // About Artist (if available)
+  // 4. Artist Bio / Information
   if (related.aboutArtist != null) {
-    print('\n--- ${related.aboutArtist!.title} ---');
-    print('Bio: ${related.aboutArtist!.description}');
+    print('\n=== About the Artist ===');
+    print('Name        : ${related.aboutArtist!.title}');
+    print('Description : ${related.aboutArtist!.description}');
   }
 
-  // Option 2: Access via YouTube instance
+  // Approach 2: Via YouTube instance
   final yt = YouTube(musicUrl);
   final musicData = await yt.musicRelated;
-  print('\nRecommended playlists count: ${musicData.recommendedPlaylists.length}');
+  print('\nFound ${musicData.recommendedPlaylists.length} recommended playlists.');
 }
 ```
 
 ---
 
-### 4. Customizing InnerTube Clients
+### Step 6: Customizing InnerTube Clients
 
-You can specify different InnerTube clients (`ANDROID_VR`, `WEB`, `WEB_MUSIC`, `TV`, `IOS`, `MWEB`) if needed:
+YouTube uses various API client configurations (`WEB_MUSIC`, `ANDROID_VR`, `TV`, `IOS`, `WEB`). You can specify a custom client if needed:
 
 ```dart
 import 'package:darttubefix/darttubefix.dart';
 
 void main() async {
-  // Use specific InnerTube client
-  final yt = YouTube('https://www.youtube.com/watch?v=dQw4w9WgXcQ', client: 'TV');
+  // Use specific client for requests
+  final yt = YouTube('https://music.youtube.com/watch?v=4NRXx6U8ABQ', client: 'WEB_MUSIC');
   final title = await yt.title;
-  print('Title: $title');
+  print('Track Title: $title');
 }
 ```
+
+---
+
+## Summary of Scraped YouTube Music Data Fields
+
+| Category | Scraped Data Fields | Class / Method |
+| :--- | :--- | :--- |
+| **Track Details** | Title, Artist/Author, Duration, Views, Thumbnail URL | `YouTube` instance |
+| **Audio Streams** | Direct Playable URL, Bitrate (ABR), Container (MP4/WebM), MIME Type, File Size | `yt.streams` -> `StreamQuery` |
+| **Search** | Videos, Songs, Artists, Channels, Playlists, Albums | `Search` class |
+| **Playlists** | Title, Playlist ID, Track Count, Thumbnails | `MusicRelated.recommendedPlaylists` |
+| **Artists** | Title, Channel ID, Subscriber Count, Thumbnails | `MusicRelated.similarArtists` |
+| **Artist Bio** | Description/Bio, Title, Metadata | `MusicRelated.aboutArtist` |
 
 ---
 

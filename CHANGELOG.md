@@ -1,3 +1,11 @@
+## 1.0.7
+
+- Fixed stream URL deciphering (`n`-signature cipher) across all InnerTube clients and fallback manifests, eliminating HTTP 403 Forbidden errors.
+- Defaulted client and primary fallback to `TVHTML5_SIMPLY_EMBEDDED_PLAYER` for direct browser and mobile player stream playability.
+- Updated `streams.bestAudio` to prioritize standalone native MP4/AAC streams (`itag 140`) for universal native playback on iOS, Android, and Web while saving bandwidth and battery.
+- Added `stream.httpHeaders` getter to provide required headers (`User-Agent`, `Range`, `Accept`) for Flutter media players (`just_audio`, `audioplayers`, `video_player`).
+- Refined `MusicRelated` shelf parsing for YouTube Music related content queries.
+
 ## 1.0.6
 
 - Fixed audio stream download handlers and range-request HTTP chunking.
